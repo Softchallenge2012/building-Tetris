@@ -1,0 +1,246 @@
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from matplotlib.patches import Arc
+from matplotlib.path import Path
+
+from space import Space, total_area, find_overlaps, window_count
+
+# =================================================================
+# 1. STANDARD SIZES  (the "twice as big" rules live only here)
+# =================================================================
+REGULAR_BEDROOM = (12, 13)
+MASTER_BEDROOM = (12, 26)     # 2x regular bedroom (same width, double depth)
+
+REGULAR_CLOSET = (6, 6)
+MASTER_CLOSET = (6, 12)       # 2x regular closet
+
+REGULAR_BATH = (6, 7)
+MASTER_BATH = (6, 14)         # 2x regular bath
+
+# =================================================================
+# 2. CREATE SPACE INSTANCES  (what each room IS — not yet WHERE)
+# =================================================================
+garage = Space("GARAGE\n(2 CARS)", (24, 24), category="garage")
+hallway = Space("MUDROOM /\nHALLWAY", (10, 24), category="hallway")
+living = Space("LIVING ROOM", (19, 18), category="living")
+kitchen = Space("KITCHEN", (15, 18), category="kitchen")
+porch = Space("COVERED PORCH", (34, 6), category="porch")
+
+bedroom2 = Space("BEDROOM 2", REGULAR_BEDROOM, category="bedroom")
+bath2 = Space("BATH 2", REGULAR_BATH, category="bath")
+closet2 = Space("CLOSET", REGULAR_CLOSET, category="closet")
+
+bedroom3 = Space("BEDROOM 3", REGULAR_BEDROOM, category="bedroom")
+bath3 = Space("BATH 3", REGULAR_BATH, category="bath")
+closet3 = Space("CLOSET", REGULAR_CLOSET, category="closet")
+
+bedroom4 = Space("BEDROOM 4", REGULAR_BEDROOM, category="bedroom")
+bath4 = Space("BATH 4", REGULAR_BATH, category="bath")
+closet4 = Space("CLOSET", REGULAR_CLOSET, category="closet")
+
+bedroom5 = Space("BEDROOM 5", REGULAR_BEDROOM, category="bedroom")
+bath5 = Space("BATH 5", REGULAR_BATH, category="bath")
+closet5 = Space("CLOSET", REGULAR_CLOSET, category="closet")
+
+master_bedroom = Space("MASTER BEDROOM", MASTER_BEDROOM, category="bedroom")
+master_bath = Space("MASTER BATH", MASTER_BATH, category="bath")
+master_closet = Space("MASTER\nCLOSET", MASTER_CLOSET, category="closet")
+
+all_spaces = [
+    garage, hallway, living, kitchen, porch,
+    bedroom2, bath2, closet2,
+    bedroom3, bath3, closet3,
+    bedroom4, bath4, closet4,
+    bedroom5, bath5, closet5,
+    master_bedroom, master_bath, master_closet,
+]
+
+# =================================================================
+# 3. PLACE SPACES  (assign coordinates — the only place layout logic lives)
+#    Change these numbers to rearrange the house without touching anything above.
+# =================================================================
+garage.place(0, 0)
+hallway.place(24, 0)
+living.place(0, 24)
+kitchen.place(19, 24)
+porch.place(0, 42)
+
+bedroom2.place(34, 0)
+bath2.place(46, 0)
+closet2.place(46, 7)
+
+bedroom3.place(52, 0)
+bath3.place(64, 0)
+closet3.place(64, 7)
+
+bedroom4.place(34, 13)
+closet4.place(46, 13)
+bath4.place(46, 19)
+
+bedroom5.place(52, 13)
+closet5.place(64, 13)
+bath5.place(64, 19)
+
+master_bedroom.place(70, 0)
+master_bath.place(82, 0)
+master_closet.place(82, 14)
+
+# ---- sanity checks before drawing ----
+clashes = find_overlaps(all_spaces)
+if clashes:
+    for a, b in clashes:
+        print(f"OVERLAP: {a.space_name} <-> {b.space_name}")
+    raise SystemExit("Fix overlapping placements before rendering.")
+
+TOTAL_AREA = total_area(all_spaces)
+print(f"Total area: {TOTAL_AREA:,.0f} sq ft")
+for s in all_spaces:
+    print(f"  {s.space_name:20s} {s.width}x{s.height:<4} = {s.area:>5.0f} sf  @ ({s.x},{s.y})")
+
+# =================================================================
+# RENDER
+# =================================================================
+FLOOR_COLORS = {
+    "bedroom": "#efe9de",
+    "living": "#efe9de",
+    "kitchen": "#efe9de",
+    "hallway": "#efe9de",
+    "bath": "#e6ecf0",
+    "closet": "#eee7da",
+    "garage": "#d9d9d9",
+    "porch": "#f4f1ea",
+}
+WALL = "#1a1a1a"
+
+FONT_MAIN = {
+    "bedroom": 12, "living": 13, "kitchen": 13, "hallway": 10,
+    "garage": 13, "porch": 11, "bath": 9, "closet": 8.5,
+}
+FONT_DIM = {
+    "bedroom": 10.5, "living": 10.5, "kitchen": 10.5, "hallway": 9,
+    "garage": 10.5, "porch": 10, "bath": 8.5, "closet": 8,
+}
+
+fig, ax = plt.subplots(figsize=(20, 14))
+
+for s in all_spaces:
+    rect = patches.Rectangle((s.x, s.y), s.width, s.height,
+                              facecolor=FLOOR_COLORS.get(s.category, "#ffffff"),
+                              edgecolor=WALL, linewidth=2.4, zorder=2)
+    ax.add_patch(rect)
+    cx, cy = s.x + s.width / 2, s.y + s.height / 2
+    ax.text(cx, cy + s.height * 0.06, s.space_name, ha="center", va="center",
+            fontsize=FONT_MAIN.get(s.category, 10), fontweight="bold",
+            color="#111111", zorder=4)
+    ax.text(cx, cy - s.height * 0.16, s.dims_label, ha="center", va="center",
+            fontsize=FONT_DIM.get(s.category, 9), color="#333333", zorder=4)
+
+# garage floor hatch
+gx0, gy0, gx1, gy1 = garage.bounds()
+for gx in range(int(gx0) + 1, int(gx1), 2):
+    ax.plot([gx, gx], [gy0 + 0.5, gy1 - 0.5], color="#bbbbbb", lw=0.6, zorder=1)
+
+# porch plank texture
+px0, py0, px1, py1 = porch.bounds()
+for px in range(int(px0) + 1, int(px1), 2):
+    ax.plot([px, px], [py0 + 0.3, py1 - 0.3], color="#d8d2c4", lw=0.6, zorder=1)
+
+# outer footprint outline (computed from the placed spaces, not hardcoded)
+outer_pts = [(0, 0), (88, 0), (88, 26), (34, 26), (34, 42), (0, 42), (0, 0)]
+xs, ys = zip(*outer_pts)
+ax.plot(xs, ys, color=WALL, lw=4.0, zorder=5, solid_joinstyle="miter")
+
+# a few key structural walls, bolder
+bold_walls = [
+    [(24, 0), (24, 24)],
+    [(34, 0), (34, 42)],
+    [(0, 24), (34, 24)],
+    [(19, 24), (19, 42)],
+]
+for (x1, y1), (x2, y2) in bold_walls:
+    ax.plot([x1, x2], [y1, y2], color=WALL, lw=3.0, zorder=5)
+
+
+def door(x, y, w, swing="up"):
+    ax.add_patch(Arc((x, y), 2 * w, 2 * w, theta1=0 if swing == "up" else 180,
+                      theta2=90 if swing == "up" else 270, color="#555555", lw=1.0, zorder=3))
+
+
+door(19, 24, 2.6)
+door(34, 5, 2.6)
+door(2, 24, 2.6)
+
+# =================================================================
+# WINDOWS — every exterior wall of a bedroom, the living room, or the
+# kitchen gets a window at least every WINDOW_SPACING feet (min 1 per wall).
+# Interior walls (shared with hallways, baths, closets, garage) get none.
+# =================================================================
+WINDOW_SPACING = 6  # feet
+WINDOW_COLOR = "#bfe0ee"
+
+# (room label, x1, y1, x2, y2) — each tuple is one straight exterior wall
+# segment that belongs to a room requiring windows. Only axis-aligned
+# segments are supported (horizontal: y1==y2, vertical: x1==x2).
+exterior_window_walls = [
+    ("bedroom2 south", 34, 0, 46, 0),
+    ("bedroom3 south", 52, 0, 64, 0),
+    ("bedroom4 north", 34, 26, 46, 26),
+    ("bedroom5 north", 52, 26, 64, 26),
+    ("master bedroom south", 70, 0, 82, 0),
+    ("master bedroom north", 70, 26, 82, 26),
+    ("living room west", 0, 24, 0, 42),
+    ("living room north", 0, 42, 19, 42),
+    ("kitchen north", 19, 42, 34, 42),
+    ("kitchen east", 34, 26, 34, 42),
+]
+
+
+def draw_window(ax, cx, cy, orientation, size=3.0, thickness=0.55):
+    """Draw a simple window symbol (light-blue glass + frame ticks)
+    centered at (cx, cy) on a horizontal or vertical exterior wall."""
+    if orientation == "horizontal":
+        w, h = size, thickness
+    else:
+        w, h = thickness, size
+    ax.add_patch(patches.Rectangle((cx - w / 2, cy - h / 2), w, h,
+                                    facecolor=WINDOW_COLOR, edgecolor=WALL,
+                                    linewidth=1.2, zorder=6))
+    # two thin lines to suggest window panes
+    if orientation == "horizontal":
+        ax.plot([cx - w / 2, cx + w / 2], [cy, cy], color=WALL, lw=0.8, zorder=7)
+    else:
+        ax.plot([cx, cx], [cy - h / 2, cy + h / 2], color=WALL, lw=0.8, zorder=7)
+
+
+for label, x1, y1, x2, y2 in exterior_window_walls:
+    horizontal = (y1 == y2)
+    length = abs(x2 - x1) if horizontal else abs(y2 - y1)
+    n = window_count(length, spacing=WINDOW_SPACING)
+    margin = min(1.4, length * 0.15)
+    usable = length - 2 * margin
+    for i in range(n):
+        t = 0.5 if n == 1 else i / (n - 1)
+        pos = margin + t * usable
+        if horizontal:
+            cx, cy = x1 + pos, y1
+            draw_window(ax, cx, cy, "horizontal")
+        else:
+            cx, cy = x1, y1 + pos
+            draw_window(ax, cx, cy, "vertical")
+
+ax.text(44, 50.5, "5-BEDROOM / 5-BATH / 5-CLOSET SINGLE-STORY HOME",
+        ha="center", va="center", fontsize=17, fontweight="bold", color="#111111")
+ax.text(44, 48.7, f"Total Area \u2248 {TOTAL_AREA:,.0f} sq ft   |   Scale in feet",
+        ha="center", va="center", fontsize=11, color="#333333")
+
+ax.annotate("N", xy=(85, 46), xytext=(85, 43.5), ha="center", va="center",
+            fontsize=11, fontweight="bold",
+            arrowprops=dict(arrowstyle="-|>", lw=1.8, color="#333333"))
+
+ax.set_xlim(-3, 92)
+ax.set_ylim(-3, 53)
+ax.set_aspect("equal")
+ax.axis("off")
+
+plt.tight_layout()
+plt.savefig("outputs/floor_plan.png", dpi=220, facecolor="white", bbox_inches="tight")

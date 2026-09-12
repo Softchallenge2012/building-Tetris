@@ -5,6 +5,7 @@ import time
 import keyboard
 import tkinter as tk
 import threading
+import multiprocessing as mp
 
 from utilities.input_manager import InputManager
 from utilities.display import Color, Frame
@@ -776,8 +777,9 @@ class Tetris:
         self._DCDCounter = self._DCD
         self._playing = True
 
-def second_screen():
-    global GLOBAL_STATE 
+def second_screen(state_dict=None):
+    if state_dict is None:
+        state_dict = GLOBAL_STATE 
 
     root = tk.Tk()
     root.title("Tetris")
@@ -819,22 +821,33 @@ def second_screen():
     empty_canvas()
 
     def update_label():
-        label_high_score.config(text=f"High Score: {GLOBAL_STATE['HIGH_SCORE']}")
-        label_score.config(text=f"Score: {GLOBAL_STATE['CURRENT_SCORE']}")
-        if GLOBAL_STATE["HOLD_PIECE"] is not None:
-            # breakpoint()
-            update_canvas(GLOBAL_STATE["HOLD_PIECE"])
-        else:
-            empty_canvas()
-
+        try:
+            label_high_score.config(text=f"High Score: {state_dict['HIGH_SCORE']}")
+            label_score.config(text=f"Score: {state_dict['CURRENT_SCORE']}")
+            if state_dict["HOLD_PIECE"] is not None:
+                update_canvas(state_dict["HOLD_PIECE"])
+            else:
+                empty_canvas()
+        except Exception:
+            pass
 
         root.after(100, update_label)
 
     root.after(100, update_label)
     root.mainloop()
 
+def background_logic():
+    # Perform game calculations, network calls, or input processing here
+    pass
+
 if __name__ == "__main__":
-    threading.Thread(target=second_screen, daemon=True).start()
+    manager = mp.Manager()
+    shared_state = manager.dict(GLOBAL_STATE)
+    GLOBAL_STATE = shared_state
+
+    p = mp.Process(target=second_screen, args=(shared_state,), daemon=True)
+    p.start()
 
     tetris = Tetris()
     tetris.play()
+

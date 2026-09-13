@@ -55,11 +55,11 @@
                             {% set height_key = field.key ~ "_height" %}
                             <div class="field-row">
                                 <label>{{ field.label }} width</label>
-                                <input type="number" min="1" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
+                                <input type="number" min="0" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
                             </div>
                             <div class="field-row">
                                 <label>{{ field.label }} height</label>
-                                <input type="number" min="1" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
+                                <input type="number" min="0" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -75,11 +75,11 @@
                             {% set height_key = field.key ~ "_height" %}
                             <div class="field-row">
                                 <label>{{ field.label }} width</label>
-                                <input type="number" min="1" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
+                                <input type="number" min="0" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
                             </div>
                             <div class="field-row">
                                 <label>{{ field.label }} height</label>
-                                <input type="number" min="1" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
+                                <input type="number" min="0" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -95,11 +95,11 @@
                             {% set height_key = field.key ~ "_height" %}
                             <div class="field-row">
                                 <label>{{ field.label }} width</label>
-                                <input type="number" min="1" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
+                                <input type="number" min="0" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
                             </div>
                             <div class="field-row">
                                 <label>{{ field.label }} height</label>
-                                <input type="number" min="1" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
+                                <input type="number" min="0" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -117,7 +117,7 @@
                                 {% if "master" in field.key %}
                                 <div class="field-row">
                                     <label>Number of {{ field.count_label }}</label>
-                                    <input type="number" min="1" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
+                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
                                 </div>
                                 {% endif %}
                                 {% endfor %}
@@ -131,7 +131,7 @@
                                 {% if "regular" in field.key %}
                                 <div class="field-row">
                                     <label>Number of {{ field.count_label }}</label>
-                                    <input type="number" min="1" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
+                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
                                 </div>
                                 {% endif %}
                                 {% endfor %}
@@ -145,7 +145,7 @@
                                 {% if "master" not in field.key and "regular" not in field.key %}
                                 <div class="field-row">
                                     <label>Number of {{ field.count_label }}</label>
-                                    <input type="number" min="1" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
+                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
                                 </div>
                                 {% endif %}
                                 {% endfor %}

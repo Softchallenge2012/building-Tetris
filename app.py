@@ -64,7 +64,7 @@ PYGAME_HEIGHT = game.BOARD_ROWS * PYGAME_SCALAR
 
 def _to_int(value, default):
     try:
-        return max(1, int(value))
+        return max(0, int(value))
     except (TypeError, ValueError):
         return default
 
@@ -107,6 +107,7 @@ def build_runtime_catalog(config):
     game.SHAPES = {
         name: game._make_rectangle_states(size, game.SPACE_COLORS[name])
         for name, size in game.SPACE_SIZES.items()
+        if game.SHAPE_COUNTS.get(name, 0) > 0
     }
 
     game.KICK_TABLE = {shape_name: [] for shape_name in game.SHAPES.keys()}

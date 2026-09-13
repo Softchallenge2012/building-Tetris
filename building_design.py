@@ -73,15 +73,15 @@ SPACE_COLORS = {
 }
 
 SHAPE_COUNTS = {
-    "MASTER_BEDROOM": 1,
-    "MASTER_CLOSET": 1,
-    "MASTER_BATH": 1,
-    "REGULAR_BEDROOM": 5,
-    "REGULAR_BATH": 5,
-    "REGULAR_CLOSET": 5,
-    "KITCHEN": 1,
-    "GARAGE": 1,
-    "COVERED_PORCH": 1,
+    "MASTER_BEDROOM": 0,
+    "MASTER_CLOSET": 0,
+    "MASTER_BATH": 0,
+    "REGULAR_BEDROOM": 9,
+    "REGULAR_BATH": 9,
+    "REGULAR_CLOSET": 9,
+    "KITCHEN": 0,
+    "GARAGE": 0,
+    "COVERED_PORCH": 0,
 }
 
 LAND_WIDTH = 100
@@ -91,8 +91,8 @@ LAND_HEIGHT = 100
 def _scaled_space_size(size):
     width, height = size
     return (
-        max(1, int(math.ceil(width / LAND_WIDTH * BOARD_COLS))),
-        max(1, int(math.ceil(height / LAND_HEIGHT * BOARD_ROWS))),
+        max(0, int(math.ceil(width / LAND_WIDTH * BOARD_COLS))),
+        max(0, int(math.ceil(height / LAND_HEIGHT * BOARD_ROWS))),
     )
 
 
@@ -107,6 +107,7 @@ def _make_rectangle_states(size, color):
 SHAPES = {
     name: _make_rectangle_states(size, SPACE_COLORS[name])
     for name, size in SPACE_SIZES.items()
+    if SHAPE_COUNTS.get(name, 0) > 0
 }
 
 # Defining wall kick data for Arika SRS. Source: https://tetris.fandom.com/wiki/Super_Rotation_System
@@ -272,16 +273,26 @@ class Bag:
         """Generate a new randomized bag with the requested room counts."""
         self._bag = []
         for shape_name, count in SHAPE_COUNTS.items():
+            if count <= 0:
+                continue
             self._bag.extend([shape_name] * count)
         np.random.shuffle(self._bag)
         self._index = 0
+
+    def isEmpty(self):
+        """Return True when the current bag is exhausted and no more shapes remain."""
+        return self._index >= len(self._bag)
+
+    def isExhausted(self):
+        """Return True after the last piece in the current bag has been used."""
+        return len(self._bag) > 0 and self._index >= len(self._bag)
 
     def getTetromino(self):
         """Get the next Tetromino from the bag. If the bag is empty,
         generate a new randomized bag then get the next Tetromino.
         """
 
-        if self._index >= len(self._bag):
+        if self.isEmpty():
             self._newBag()
             self._index = 0
         shape = self._bag[self._index]
@@ -549,6 +560,9 @@ class Tetris:
                     if state[i][j] != X:
                         self._background[pos[0]+i][pos[1]+j] = state[i][j]
             self._checkForClears()
+            if self._bag.isExhausted():
+                self._gameOver()
+                return
             self._activeTetromino = self._bag.getTetromino()
             self._spawnAtCenter(self._activeTetromino)
             self._holdAvailable = True
@@ -577,6 +591,9 @@ class Tetris:
                                 if state[i][j] != X:
                                     self._background[pos[0]+i][pos[1]+j] = state[i][j]
                         self._checkForClears()
+                        if self._bag.isExhausted():
+                            self._gameOver()
+                            return
                         self._activeTetromino = self._bag.getTetromino()
                         self._spawnAtCenter(self._activeTetromino)
                         if self._checkCollision(self._activeTetromino.getPosition(), self._activeTetromino.getState()):
@@ -704,7 +721,7 @@ class Tetris:
         '''Print summary and reset game.'''
         global GLOBAL_STATE
 
-        print(f"Level: {self._level}, Lines Cleared: {self._linesCleared}")
+        # print(f"Level: {self._level}, Lines Cleared: {self._linesCleared}")
         self._gameOverActive = True
         self._updateDisplayFrame()
         self._display.send(self._displayFrame)

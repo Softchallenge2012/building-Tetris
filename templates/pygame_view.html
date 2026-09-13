@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #0f172a; color: white; }
+        .wrap { padding: 12px; display: grid; gap: 10px; justify-content: center; }
+        .shot { width: {{ pygame_width }}px; height: {{ pygame_height }}px; border: 0; border-radius: 12px; background: #111827; }
+        .controls-layer { width: {{ pygame_width }}px; max-width: 100%; background: #020617; border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; gap: 10px; justify-content: center; }
+        .controls-layer form { margin: 0; }
+        .controls-layer button { border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+        .pause-btn { background: #2563eb; color: #fff; }
+        .reset-btn { background: #ef4444; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <iframe
+            class="shot"
+            title="Pygame window"
+            srcdoc='<!doctype html><html><head><meta charset="utf-8" /><meta http-equiv="refresh" content="2" /><style>body { margin: 0; font-family: Arial, sans-serif; background: #0f172a; color: white; } .inner { padding: 12px; } img { width: 100%; height: 100%; display: block; border-radius: 12px; background: #111827; }</style></head><body><div class="inner"><img src="{{ url_for("pygame_snapshot") }}?t={{ timestamp }}" alt="pygame snapshot" /></div></body></html>'
+        ></iframe>
+        <div class="controls-layer">
+            <form method="post" action="{{ url_for('second_screen_pause') }}">
+                <button class="pause-btn" type="submit">Pause</button>
+            </form>
+            <form method="post" action="{{ url_for('second_screen_reset') }}">
+                <button class="reset-btn" type="submit">Reset</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

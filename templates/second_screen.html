@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #020617; color: #e2e8f0; }
+        .wrap { height: 100vh; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        form { margin: 0; }
+        button { border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+        .pause { background: #2563eb; color: white; }
+        .reset { background: #ef4444; color: white; }
+        .status { position: fixed; left: 8px; top: 8px; font-size: 12px; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="status">{{ 'running' if workflow_running else 'idle' }}</div>
+
+        <form method="post" action="{{ url_for('second_screen_pause') }}">
+            <button class="pause" type="submit">Pause</button>
+        </form>
+        <form method="post" action="{{ url_for('second_screen_reset') }}">
+            <button class="reset" type="submit">Reset</button>
+        </form>
+    </div>
+</body>
+</html>

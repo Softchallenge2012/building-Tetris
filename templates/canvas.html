@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="5" />
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #111827; color: white; }
+        .inner { padding: 12px; box-sizing: border-box; }
+        canvas { width: 100%; height: 280px; background: #0b1220; border-radius: 12px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="inner">
+        <canvas id="preview" width="900" height="280"></canvas>
+    </div>
+    <script>
+        const canvas = document.getElementById("preview");
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0b1220";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "#334155";
+        ctx.lineWidth = 1;
+        const rows = {{ canvas_rows | tojson }};
+
+        const groups = {
+            master: [],
+            regular: [],
+            other: [],
+        };
+
+        rows.forEach((row) => {
+            const label = String(row[0] || "").toLowerCase();
+            if (label.includes("master")) {
+                groups.master.push(row);
+            } else if (label.includes("regular")) {
+                groups.regular.push(row);
+            } else {
+                groups.other.push(row);
+            }
+        });
+
+        const columns = [
+            { title: "Master Rooms", key: "master", x: 18 },
+            { title: "Regular Rooms", key: "regular", x: 318 },
+            { title: "Other Rooms", key: "other", x: 618 },
+        ];
+
+        let y = 20;
+        ctx.font = "bold 18px Arial";
+        ctx.fillStyle = "#e5e7eb";
+        ctx.fillText("Canvas preview", 18, y);
+        y += 18;
+
+        ctx.beginPath();
+        ctx.moveTo(18, y + 6);
+        ctx.lineTo(canvas.width - 18, y + 6);
+        ctx.stroke();
+
+        columns.forEach((col) => {
+            let rowY = y + 30;
+            ctx.font = "bold 15px Arial";
+            ctx.fillStyle = "#93c5fd";
+            ctx.fillText(col.title, col.x, rowY);
+            rowY += 22;
+
+            ctx.font = "13px Arial";
+            ctx.fillStyle = "#f8fafc";
+            groups[col.key].forEach((room) => {
+                ctx.fillText(`${room[0]} ${room[1]}x${room[2]} c:${room[3]}`, col.x, rowY);
+                rowY += 20;
+            });
+        });
+    </script>
+</body>
+</html>

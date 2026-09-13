@@ -69,8 +69,8 @@ class Frame:
     arrays can be accessed using the row() and column() methods.
     """
 
-    DISPLAY_ROWS = 17
-    DISPLAY_COLS = 9
+    DISPLAY_ROWS = 10
+    DISPLAY_COLS = 10
 
     def __init__(self, *, rows=DISPLAY_ROWS, cols=DISPLAY_COLS):
         """Create a display frame with given dimensions.

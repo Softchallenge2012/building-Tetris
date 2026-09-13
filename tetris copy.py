@@ -2,10 +2,10 @@ import os
 import pygame
 import numpy as np
 import time
+import keyboard
 import tkinter as tk
 import threading
 import multiprocessing as mp
-import math
 
 from utilities.input_manager import InputManager
 from utilities.display import Color, Frame
@@ -33,72 +33,167 @@ P = Color(153, 0, 255) # Purple
 R = Color(255, 0, 0) # Red
 A = Color(42, 42, 42) # Gray
 
-# Room/window sizes sourced from building_room_door_window/build_floor_plan.py
-REGULAR_BEDROOM = (12, 13)
-MASTER_BEDROOM = (12, 26)
-REGULAR_CLOSET = (6, 6)
-MASTER_CLOSET = (6, 12)
-REGULAR_BATH = (6, 7)
-MASTER_BATH = (6, 14)
-WINDOWS = (3, 1)
-
-ROOM_SHAPE_SIZES = {
-    "REGULAR_BEDROOM": REGULAR_BEDROOM,
-    "MASTER_BEDROOM": MASTER_BEDROOM,
-    "REGULAR_CLOSET": REGULAR_CLOSET,
-    "MASTER_CLOSET": MASTER_CLOSET,
-    "REGULAR_BATH": REGULAR_BATH,
-    "MASTER_BATH": MASTER_BATH,
-    "WINDOWS": WINDOWS,
-}
-
-ROOM_SHAPE_COLORS = {
-    "REGULAR_BEDROOM": C,
-    "MASTER_BEDROOM": B,
-    "REGULAR_CLOSET": O,
-    "MASTER_CLOSET": Y,
-    "REGULAR_BATH": G,
-    "MASTER_BATH": P,
-    "WINDOWS": R,
-}
-
-LAND_WIDTH = 3000
-LAND_HEIGHT = 3000
-GAME_BOARD_WIDTH = Frame.DISPLAY_COLS
-GAME_BOARD_HEIGHT = Frame.DISPLAY_ROWS
-
-
-def _scaled_room_size(size):
-    """Project real room dimensions onto the gameplay board from a 3000 by 3000 land reference."""
-    width, height = size
-    return (
-        max(1, int(round(width / LAND_WIDTH * GAME_BOARD_WIDTH))),
-        max(1, int(round(height / LAND_HEIGHT * GAME_BOARD_HEIGHT))),
-    )
-
-
-def _make_rectangle_states(size, color):
-    """Create 1 (square) or 2 (rectangle) rotation states."""
-    width, height = _scaled_room_size(size)
-    state = np.full((height, width), color, dtype=object)
-    if width == height:
-        return [state]
-    return [state, np.full((width, height), color, dtype=object)]
-
-# Defining room/window rectangular shapes and rotations
+# Defining standard Tetromino shapes and rotations
 SHAPES = {
-    "REGULAR_BEDROOM": _make_rectangle_states(REGULAR_BEDROOM, ROOM_SHAPE_COLORS["REGULAR_BEDROOM"]),
-    "MASTER_BEDROOM": _make_rectangle_states(MASTER_BEDROOM, ROOM_SHAPE_COLORS["MASTER_BEDROOM"]),
-    "REGULAR_CLOSET": _make_rectangle_states(REGULAR_CLOSET, ROOM_SHAPE_COLORS["REGULAR_CLOSET"]),
-    "MASTER_CLOSET": _make_rectangle_states(MASTER_CLOSET, ROOM_SHAPE_COLORS["MASTER_CLOSET"]),
-    "REGULAR_BATH": _make_rectangle_states(REGULAR_BATH, ROOM_SHAPE_COLORS["REGULAR_BATH"]),
-    "MASTER_BATH": _make_rectangle_states(MASTER_BATH, ROOM_SHAPE_COLORS["MASTER_BATH"]),
-    "WINDOWS": _make_rectangle_states(WINDOWS, ROOM_SHAPE_COLORS["WINDOWS"]),
+    "I":
+    [
+        np.array([[X,X,X,X],
+                  [C,C,C,C],
+                  [X,X,X,X],
+                  [X,X,X,X]]),
+        np.array([[X,X,C,X],
+                  [X,X,C,X],
+                  [X,X,C,X],
+                  [X,X,C,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,X],
+                  [C,C,C,C],
+                  [X,X,X,X]]),
+        np.array([[X,C,X,X],
+                  [X,C,X,X],
+                  [X,C,X,X],
+                  [X,C,X,X]])
+    ],
+    "J":
+    [
+        np.array([[X,X,X,X],
+                  [X,B,X,X],
+                  [X,B,B,B],
+                  [X,X,X,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,B,B],
+                  [X,X,B,X],
+                  [X,X,B,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,X],
+                  [X,B,B,B],
+                  [X,X,X,B]]),
+        np.array([[X,X,X,X],
+                  [X,X,B,X],
+                  [X,X,B,X],
+                  [X,B,B,X]])
+    ],
+    "L":
+    [
+        np.array([[X,X,X,X],
+                  [X,X,X,O],
+                  [X,O,O,O],
+                  [X,X,X,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,O,X],
+                  [X,X,O,X],
+                  [X,X,O,O]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,X],
+                  [X,O,O,O],
+                  [X,O,X,X]]),
+        np.array([[X,X,X,X],
+                  [X,O,O,X],
+                  [X,X,O,X],
+                  [X,X,O,X]])
+    ],
+    "O":
+    [
+        np.array([[X,X,X,X],
+                  [X,Y,Y,X],
+                  [X,Y,Y,X],
+                  [X,X,X,X]]),
+    ],
+    "S":
+    [
+        np.array([[X,X,X,X],
+                  [X,X,G,G],
+                  [X,G,G,X],
+                  [X,X,X,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,G,X],
+                  [X,X,G,G],
+                  [X,X,X,G]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,X],
+                  [X,X,G,G],
+                  [X,G,G,X]]),
+        np.array([[X,X,X,X],
+                  [X,G,X,X],
+                  [X,G,G,X],
+                  [X,X,G,X]])
+    ],
+    "Z":
+    [
+        np.array([[X,X,X,X],
+                  [X,R,R,X],
+                  [X,X,R,R],
+                  [X,X,X,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,R],
+                  [X,X,R,R],
+                  [X,X,R,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,X],
+                  [X,R,R,X],
+                  [X,X,R,R]]),
+        np.array([[X,X,X,X],
+                  [X,X,R,X],
+                  [X,R,R,X],
+                  [X,R,X,X]])
+    ],
+    "T":
+    [
+        np.array([[X,X,X,X],
+                  [X,X,P,X],
+                  [X,P,P,P],
+                  [X,X,X,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,P,X],
+                  [X,X,P,P],
+                  [X,X,P,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,X,X],
+                  [X,P,P,P],
+                  [X,X,P,X]]),
+        np.array([[X,X,X,X],
+                  [X,X,P,X],
+                  [X,P,P,X],
+                  [X,X,P,X]])
+    ],
 }
 
 # Defining wall kick data for Arika SRS. Source: https://tetris.fandom.com/wiki/Super_Rotation_System
 #TODO: Implement wall kicks
-KICK_TABLE = {shape_name: [] for shape_name in SHAPES.keys()}
+KICK_TABLE ={
+    "J": {},
+    "L": [
+            [(0,0), (0,0), (0,0), (0,0), (0,0)],
+            [( 0, 0), ( 1, 0), ( 1,-1), ( 0, 2), ( 1, 2)],
+            [( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0)],
+            [( 0, 0), (-1, 0), (-1,-1), ( 0, 2), (-1, 2)]
+        ],
+    "S": [
+            [(0,0), (0,0), (0,0), (0,0), (0,0)],
+            [( 0, 0), ( 1, 0), ( 1,-1), ( 0, 2), ( 1, 2)],
+            [( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0)],
+            [( 0, 0), (-1, 0), (-1,-1), ( 0, 2), (-1, 2)]
+        ],
+    "T": [
+            [(0,0), (0,0), (0,0), (0,0), (0,0)],
+            [( 0, 0), ( 1, 0), ( 1,-1), ( 0, 2), ( 1, 2)],
+            [( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0)],
+            [( 0, 0), (-1, 0), (-1,-1), ( 0, 2), (-1, 2)]
+        ],
+    "Z": [
+            [(0,0), (0,0), (0,0), (0,0), (0,0)],
+            [( 0, 0), ( 1, 0), ( 1,-1), ( 0, 2), ( 1, 2)],
+            [( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0), ( 0, 0)],
+            [( 0, 0), (-1, 0), (-1,-1), ( 0, 2), (-1, 2)]
+        ],
+    "I": [], # Wall kick data for I piece is different from other pieces in SRS
+    "O": [
+            [(0,0)],
+            [(0,-1)],
+            [(-1,-1)],
+            [(-1,0)]
+     ]
+}
 
 # Defining gravity values for each level.
 GRAVITY = [1/48, 1/43, 1/38, 1/33, 1/28, 1/23, 1/18, 1/13, 1/8, 1/6,
@@ -188,9 +283,6 @@ class Tetromino:
     def getState(self, offset=0):
         return self._states[(self._rotation + offset) % len(self._states)]
 
-    def getShapeName(self):
-        return self._shape
-
     def getPosition(self, offset=[0,0]):
         return [self._position[0] + offset[0], self._position[1] + offset[1]]
 
@@ -274,7 +366,6 @@ GLOBAL_STATE = {
     "CURRENT_SCORE": 0,
     "HOLD_PIECE": None,
     "PAUSED": False,
-    "RESET": False,
 }
 
 class Tetris:
@@ -286,7 +377,6 @@ class Tetris:
             pygame.K_x: self._rotate180,
             pygame.K_LCTRL: self._rotateCCW,
             pygame.K_z: self._rotateCCW,
-            pygame.K_w: self._moveUp,
             pygame.K_SPACE: self._hardDrop,
             pygame.K_DOWN: self._softDrop,
             pygame.K_LEFT: self._moveLeft,
@@ -351,12 +441,6 @@ class Tetris:
 
         # TODO: Change to hyprid if, process, sleep, while structure with ns
         while self._playing:
-            if GLOBAL_STATE.get("RESET", False):
-                self._restartFromUI()
-                GLOBAL_STATE["RESET"] = False
-                wasPaused = False
-                continue
-
             isPaused = GLOBAL_STATE.get("PAUSED", False)
 
             if isPaused:
@@ -405,33 +489,6 @@ class Tetris:
         self._display.send(Frame()) # Set display to black
         pygame.display.quit()
         pygame.quit()
-
-    def _restartFromUI(self):
-        """Hard reset triggered by the Tk reset button."""
-        self._background = Frame(rows=self._displayFrame.nrows()+3, cols=self._displayFrame.ncols()+2)
-        for i in range(self._background.nrows()):
-            for j in range(self._background.ncols()):
-                if i == 0 or j == 0 or j == self._background.ncols()-1 or i == self._background.nrows()-1 or i == self._background.nrows()-2:
-                    self._background.row(i)[j] = W
-
-        self._foreground = Frame(rows=self._displayFrame.nrows()+3, cols=self._displayFrame.ncols()+2)
-        self._resetGame()
-
-    def _lockActiveTetromino(self):
-        """Lock the active shape at its current location and spawn the next one."""
-        pos = self._activeTetromino.getPosition()
-        state = self._activeTetromino.getState()
-
-        for i in range(state.shape[0]):
-            for j in range(state.shape[1]):
-                if state[i][j] != X:
-                    self._background[pos[0]+i][pos[1]+j] = state[i][j]
-
-        self._checkForClears()
-        self._activeTetromino = self._bag.getTetromino()
-        self._holdAvailable = True
-        if self._checkCollision(self._activeTetromino.getPosition(), self._activeTetromino.getState()):
-            self._gameOver()
 
 
     def _maskTetromino(self):
@@ -506,14 +563,6 @@ class Tetris:
             if not self._checkCollision(pos, state):
                 self._activeTetromino.moveLeft()
 
-    def _moveUp(self, eventDown):
-        '''Move the active Tetromino up.'''
-        if eventDown:
-            pos = self._activeTetromino.getPosition(offset=[-1,0])
-            state = self._activeTetromino.getState()
-            if not self._checkCollision(pos, state):
-                self._activeTetromino.setPosition(pos)
-
     def _moveRight(self, eventDown):
         '''Move the active Tetromino right.'''
         if eventDown:
@@ -535,7 +584,15 @@ class Tetris:
 
             # Collision detected: lock the tetromino into the background and spawn next piece
             # TODO: implement lock delay and lock resets
-            self._lockActiveTetromino()
+            for i in range(state.shape[0]):
+                for j in range(state.shape[1]):
+                    if state[i][j] != X:
+                        self._background[pos[0]+i][pos[1]+j] = state[i][j]
+            self._checkForClears()
+            self._activeTetromino = self._bag.getTetromino()
+            self._holdAvailable = True
+            if self._checkCollision(self._activeTetromino.getPosition(), self._activeTetromino.getState()):
+                self._gameOver()
 
     def _softDrop(self, eventDown):
         '''Soft drop the active Tetromino.'''
@@ -553,7 +610,15 @@ class Tetris:
                 while True:
                     newpos = [pos[0] + 1, pos[1]]
                     if self._checkCollision(newpos, state):
-                        self._lockActiveTetromino()
+                        # lock into background
+                        for i in range(state.shape[0]):
+                            for j in range(state.shape[1]):
+                                if state[i][j] != X:
+                                    self._background[pos[0]+i][pos[1]+j] = state[i][j]
+                        self._checkForClears()
+                        self._activeTetromino = self._bag.getTetromino()
+                        if self._checkCollision(self._activeTetromino.getPosition(), self._activeTetromino.getState()):
+                            self._gameOver()
                         self._holdAvailable = True
                         self._DCDCounter = 0
                         break
@@ -606,12 +671,9 @@ class Tetris:
             self._holdTetromino.setPosition([0, 3])
             self._holdAvailable = False
 
-    def _checkForClears(self, rows: list[int] | None = None):
+    def _checkForClears(self, rows: list[int] = [1,18]):
         '''Check for and clear any completed lines.'''
         global GLOBAL_STATE
-
-        if rows is None:
-            rows = [1, self._background.nrows() - 2]
 
         clear = False
         for i in range(rows[0], rows[1]):
@@ -664,15 +726,9 @@ class Tetris:
                 print('.', end='')
                 self._display.send(self._displayFrame)
                 time.sleep(1)
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        print("Quitting Tetris")
-                        self._playing = False
-                        return
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
-                        print("Quitting Tetris")
-                        self._playing = False
-                        return
+                if keyboard.is_pressed('q'):
+                    print("Quitting Tetris")
+                    self._playing = False
 
     def _fallDown(self):
         '''Make the background fall down after game over.'''
@@ -722,7 +778,6 @@ class Tetris:
         GLOBAL_STATE["CURRENT_SCORE"] = 0
         GLOBAL_STATE["HOLD_PIECE"] = None
         GLOBAL_STATE["PAUSED"] = False
-        GLOBAL_STATE["RESET"] = False
 
     def _resetGame(self):
         pygame.event.clear()
@@ -756,8 +811,10 @@ def second_screen(state_dict=None):
     label_score.pack(padx=20, pady=20)
 
     cell_size = 100
-    canvas_size = 4 * cell_size
+    canvas_size = 4*cell_size
     canvas = tk.Canvas(root, width=canvas_size, height=canvas_size, bg="black", highlightthickness=0)
+    cells = dict()
+    colors = dict()
     canvas.pack(padx=8, pady=8)
 
     controls = tk.Frame(root, bg="black")
@@ -766,52 +823,22 @@ def second_screen(state_dict=None):
     pause_button = tk.Button(controls, text="Pause", width=12)
     pause_button.pack(side=tk.LEFT, padx=6)
 
-    reset_button = tk.Button(controls, text="Reset", width=12)
-    reset_button.pack(side=tk.LEFT, padx=6)
-
     label_high_score = tk.Label(root, text="0", font=("Arial", 24))
     label_high_score.pack(padx=20, pady=20)
 
-    max_room_dimension = max(max(size) for size in ROOM_SHAPE_SIZES.values())
-    unit = canvas_size / max_room_dimension
-
-    def color_to_hex(color):
-        return f"#{color.r:02x}{color.g:02x}{color.b:02x}"
-
     def empty_canvas():
-        canvas.delete("all")
-
-    def update_canvas(hold_piece):
-        shape_name = hold_piece.getShapeName()
-        width, height = ROOM_SHAPE_SIZES[shape_name]
-        fill = color_to_hex(ROOM_SHAPE_COLORS[shape_name])
-
-        rect_w = width * unit
-        rect_h = height * unit
-        x0 = (canvas_size - rect_w) / 2
-        y0 = (canvas_size - rect_h) / 2
-        x1 = x0 + rect_w
-        y1 = y0 + rect_h
-
-        canvas.delete("all")
-        canvas.create_rectangle(x0, y0, x1, y1, fill=fill, outline="white", width=4)
-        canvas.create_text(
-            canvas_size / 2,
-            y0 - 24 if y0 >= 40 else y1 + 24,
-            text=f"{shape_name} ({width} x {height})",
-            fill="white",
-            font=("Arial", 20, "bold")
-        )
+        for r in range(4):
+            for c in range(4):
+                x0 = c*cell_size
+                y0 = r*cell_size
+                rect = canvas.create_rectangle(x0,y0,x0+cell_size,y0+cell_size, fill="black")
+                cells[(r,c)] = rect
+                colors[(r,c)] = "black"
 
     def toggle_pause():
         paused = not state_dict.get("PAUSED", False)
         state_dict["PAUSED"] = paused
         pause_button.config(text="Resume" if paused else "Pause")
-
-    def reset_game():
-        state_dict["RESET"] = True
-        state_dict["PAUSED"] = False
-        pause_button.config(text="Pause")
 
     def on_pause_shortcut(_event):
         toggle_pause()
@@ -820,7 +847,16 @@ def second_screen(state_dict=None):
     root.bind_all("<KeyPress-p>", on_pause_shortcut)
     root.bind_all("<KeyPress-P>", on_pause_shortcut)
     pause_button.config(command=toggle_pause)
-    reset_button.config(command=reset_game)
+
+    def update_canvas(hold_piece):
+        piece_colors = hold_piece.getState()
+        for r in range(4):
+            for c in range(4):
+                col = piece_colors[r][c]
+                x0 = c*cell_size
+                y0 = r*cell_size
+                colors[(r,c)] = f"#{col.r:02x}{col.g:02x}{col.b:02x}"
+                canvas.itemconfigure(cells[(r,c)], fill=colors[(r, c)])
 
     empty_canvas()
 

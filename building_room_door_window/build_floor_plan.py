@@ -98,9 +98,8 @@ if clashes:
 
 # =================================================================
 # 5. ADD WINDOWS TO ROOMS
-#    Every exterior wall of a bedroom / living room / kitchen gets a
-#    window at least every WINDOW_SPACING feet. All Windows are the
-#    same size (Window.WIDTH) — see window.py.
+#    Only regular rooms receive exterior windows. Other rooms (master
+#    suite, kitchen, living, baths, closets, etc.) have no windows.
 # =================================================================
 # (room, x1, y1, x2, y2) — one exterior wall segment per entry
 exterior_window_walls = [
@@ -108,27 +107,19 @@ exterior_window_walls = [
     (bedroom3, 52, 0, 64, 0),
     (bedroom4, 34, 26, 46, 26),
     (bedroom5, 52, 26, 64, 26),
-    (master_bedroom, 70, 0, 82, 0),
-    (master_bedroom, 70, 26, 82, 26),
-    (living, 0, 24, 0, 42),
-    (living, 0, 42, 19, 42),
-    (kitchen, 19, 42, 34, 42),
-    (kitchen, 34, 26, 34, 42),
 ]
+
+WINDOW_INSET = 1.0  # feet; keep the opening a bit inside the wall edge
+WINDOW_SCALE = 0.82  # slightly smaller when adjacent rooms could visually merge
 
 for room, x1, y1, x2, y2 in exterior_window_walls:
     horizontal = (y1 == y2)
-    length = abs(x2 - x1) if horizontal else abs(y2 - y1)
-    n = window_count(length, spacing=WINDOW_SPACING)
-    margin = min(1.4, length * 0.15)
-    usable = length - 2 * margin
-    for i in range(n):
-        t = 0.5 if n == 1 else i / (n - 1)
-        pos = margin + t * usable
-        if horizontal:
-            room.add_window(Window(x1 + pos, y1, orientation="horizontal"))
-        else:
-            room.add_window(Window(x1, y1 + pos, orientation="vertical"))
+    cx = (x1 + x2) / 2
+    cy = (y1 + y2) / 2
+    if horizontal:
+        room.add_window(Window(cx, y1 + WINDOW_INSET, orientation="horizontal", size_scale=WINDOW_SCALE))
+    else:
+        room.add_window(Window(x1 + WINDOW_INSET, cy, orientation="vertical", size_scale=WINDOW_SCALE))
 
 # =================================================================
 # 6. ADD DOORS TO ROOMS

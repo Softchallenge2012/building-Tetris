@@ -171,27 +171,21 @@ door(34, 5, 2.6)
 door(2, 24, 2.6)
 
 # =================================================================
-# WINDOWS — every exterior wall of a bedroom, the living room, or the
-# kitchen gets a window at least every WINDOW_SPACING feet (min 1 per wall).
-# Interior walls (shared with hallways, baths, closets, garage) get none.
+# WINDOWS — only regular bedrooms receive exterior windows. All other
+# rooms, including the master suite, living room, kitchen, baths, and
+# closets, have no windows.
 # =================================================================
 WINDOW_SPACING = 6  # feet
 WINDOW_COLOR = "#bfe0ee"
 
 # (room label, x1, y1, x2, y2) — each tuple is one straight exterior wall
-# segment that belongs to a room requiring windows. Only axis-aligned
-# segments are supported (horizontal: y1==y2, vertical: x1==x2).
+# segment that belongs to a regular bedroom. Only axis-aligned segments are
+# supported (horizontal: y1==y2, vertical: x1==x2).
 exterior_window_walls = [
     ("bedroom2 south", 34, 0, 46, 0),
     ("bedroom3 south", 52, 0, 64, 0),
     ("bedroom4 north", 34, 26, 46, 26),
     ("bedroom5 north", 52, 26, 64, 26),
-    ("master bedroom south", 70, 0, 82, 0),
-    ("master bedroom north", 70, 26, 82, 26),
-    ("living room west", 0, 24, 0, 42),
-    ("living room north", 0, 42, 19, 42),
-    ("kitchen north", 19, 42, 34, 42),
-    ("kitchen east", 34, 26, 34, 42),
 ]
 
 

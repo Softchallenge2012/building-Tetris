@@ -3,23 +3,93 @@
 <head>
     <meta charset="utf-8" />
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; background: #0f172a; color: white; }
-        .wrap { padding: 12px; display: grid; gap: 10px; justify-content: center; }
-        .shot { width: {{ pygame_width }}px; height: {{ pygame_height }}px; border: 0; border-radius: 12px; background: #111827; }
-        .controls-layer { width: {{ pygame_width }}px; max-width: 100%; background: #020617; border-radius: 12px; padding: 12px; box-sizing: border-box; display: flex; gap: 10px; justify-content: center; }
-        .controls-layer form { margin: 0; }
-        .controls-layer button { border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
-        .pause-btn { background: #2563eb; color: #fff; }
-        .reset-btn { background: #ef4444; color: #fff; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0f172a;
+            color: white;
+        }
+
+        .wrap {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .shot {
+            width: {{ pygame_width }}px;
+            height: {{ pygame_height }}px;
+            max-width: 100%;
+            border: 0;
+            border-radius: 12px;
+            background: #111827;
+            overflow: hidden;
+        }
+
+        .view-3d-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            align-self: flex-start;
+            margin-left: calc((100% - {{ pygame_width }}px) / 2);
+        }
+
+        .shot-3d {
+            width: {{ pygame_width }}px;
+            height: {{ pygame_height }}px;
+            max-width: 100%;
+            border-radius: 12px;
+            background: #111827;
+            object-fit: contain;
+            display: block;
+        }
+
+        .controls-layer {
+            width: {{ pygame_width }}px;
+            max-width: 100%;
+            background: #020617;
+            border-radius: 12px;
+            padding: 12px;
+            box-sizing: border-box;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .controls-layer form {
+            margin: 0;
+        }
+
+        .controls-layer button {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .pause-btn {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .reset-btn {
+            background: #ef4444;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
     <div class="wrap">
-        <iframe
-            class="shot"
-            title="Pygame window"
-            srcdoc='<!doctype html><html><head><meta charset="utf-8" /><meta http-equiv="refresh" content="2" /><style>body { margin: 0; font-family: Arial, sans-serif; background: #0f172a; color: white; } .inner { padding: 12px; } img { width: 100%; height: 100%; display: block; border-radius: 12px; background: #111827; }</style></head><body><div class="inner"><img src="{{ url_for("pygame_snapshot") }}?t={{ timestamp }}" alt="pygame snapshot" /></div></body></html>'
-        ></iframe>
+        <iframe class="shot" title="Pygame window"
+            srcdoc='<!doctype html><html><head><meta charset="utf-8" /><meta http-equiv="refresh" content="2" /><style>html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #0f172a; } img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 12px; background: #111827; }</style></head><body><img src="{{ url_for("pygame_snapshot") }}?t={{ timestamp }}" alt="pygame snapshot" /></body></html>'></iframe>
         <div class="controls-layer">
             <form method="post" action="{{ url_for('second_screen_pause') }}">
                 <button class="pause-btn" type="submit">Pause</button>
@@ -27,7 +97,23 @@
             <form method="post" action="{{ url_for('second_screen_reset') }}">
                 <button class="reset-btn" type="submit">Reset</button>
             </form>
+            <form method="post" action="{{ url_for('second_screen_build_3d') }}">
+                <button class="pause-btn" type="submit">Build 3D</button>
+            </form>
+            <form method="post" action="{{ url_for('second_screen_view_3d') }}">
+                <button class="reset-btn" type="submit">View 3D</button>
+            </form>
         </div>
+        <span class="view-3d-label">3D Building View</span>
+        <img id="img-3d" class="shot-3d" alt="3D Building View"
+            src="/view-3d-image?t={{ timestamp }}" />
+        <script>
+            // Refresh the 3D view image every 4 seconds so it picks up newly generated images
+            setInterval(function() {
+                var img = document.getElementById('img-3d');
+                if (img) { img.src = '/view-3d-image?t=' + Date.now(); }
+            }, 4000);
+        </script>
     </div>
 </body>
 </html>

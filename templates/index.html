@@ -1,44 +1,200 @@
 <!doctype html>
 <html>
+
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Building Workflow</title>
     <style>
-        :root { color-scheme: dark; }
-        body { margin: 0; font-family: Arial, sans-serif; background: linear-gradient(135deg, #101522 0%, #1b2438 45%, #0f172a 100%); color: #f3f4f6; }
-        .page { display: grid; grid-template-columns: minmax(520px, 1fr) minmax(560px, 700px); gap: 20px; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-        .panel { background: rgba(8, 15, 30, 0.78); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 18px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
-        h1 { margin: 0 0 12px; font-size: 28px; }
-        h2 { margin: 0 0 12px; font-size: 18px; color: #cbd5e1; }
-        .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
-        .room-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-        .room-group { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px; }
-        .group-title { margin: 0 0 8px; font-size: 13px; color: #cbd5e1; }
-        .group-rows { display: grid; gap: 8px; }
-        .room { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; margin-top: 12px; }
-        .field-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-        label { display: inline-block; font-size: 12px; color: #cbd5e1; margin: 0; }
-        input { width: 100px; box-sizing: border-box; padding: 5px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: #0b1220; color: #fff; font-size: 12px; }
-        .actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
-        button { border: 0; border-radius: 12px; padding: 12px 18px; font-weight: 700; background: linear-gradient(135deg, #f97316, #ef4444); color: white; cursor: pointer; }
-        .status { font-size: 13px; color: #94a3b8; }
-        .iframe-stack { display: grid; gap: 16px; grid-template-rows: auto auto; align-content: start; justify-items: center; width: 100%; }
-        iframe { width: 100%; border: 0; border-radius: 16px; background: #fff; }
-        .pygame-host { width: min(100%, 560px); height: 1150px; }
-        .canvas-host { width: 560px; height: 304px; max-width: 100%; }
-        .hint { font-size: 12px; color: #94a3b8; margin-top: 8px; }
-        .rows { display: grid; gap: 8px; }
-        .row { display: grid; grid-template-columns: 1.8fr 1fr 1fr 0.8fr; gap: 8px; align-items: center; font-size: 13px; }
-        .row span { color: #e2e8f0; }
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #101522 0%, #1b2438 45%, #0f172a 100%);
+            color: #f3f4f6;
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: minmax(520px, 1fr) minmax(560px, 700px);
+            gap: 20px;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background: rgba(8, 15, 30, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-size: 28px;
+        }
+
+        h2 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            color: #cbd5e1;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px 14px;
+        }
+
+        .room-groups {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .room-group {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .group-title {
+            margin: 0 0 8px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .group-rows {
+            display: grid;
+            gap: 8px;
+        }
+
+        .room {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        label {
+            display: inline-block;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin: 0;
+        }
+
+        input {
+            width: 100px;
+            box-sizing: border-box;
+            padding: 5px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #0b1220;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 12px;
+            padding: 12px 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f97316, #ef4444);
+            color: white;
+            cursor: pointer;
+        }
+
+        .status {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .iframe-stack {
+            display: grid;
+            gap: 16px;
+            grid-template-rows: auto auto;
+            align-content: start;
+            justify-items: center;
+            width: 100%;
+        }
+
+        iframe {
+            width: 100%;
+            border: 0;
+            border-radius: 16px;
+            background: #fff;
+        }
+
+        .pygame-host {
+            width: min(100%, 560px);
+            height: 1150px;
+        }
+
+        .canvas-host {
+            width: 560px;
+            height: 304px;
+            max-width: 100%;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        .rows {
+            display: grid;
+            gap: 8px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1.8fr 1fr 1fr 0.8fr;
+            gap: 8px;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .row span {
+            color: #e2e8f0;
+        }
 
         @media (max-width: 1200px) {
-            .page { grid-template-columns: 1fr; }
-            .pygame-host, .canvas-host { width: 100%; }
-            .room-groups { grid-template-columns: 1fr; }
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .pygame-host,
+            .canvas-host {
+                width: 100%;
+            }
+
+            .room-groups {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="page">
         <div class="panel">
@@ -55,11 +211,13 @@
                             {% set height_key = field.key ~ "_height" %}
                             <div class="field-row">
                                 <label>{{ field.label }} width</label>
-                                <input type="number" min="0" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
+                                <input type="number" min="0" name="{{ width_key }}" placeholder="1"
+                                    value="{{ config.get(width_key, default_config[width_key]) }}" />
                             </div>
                             <div class="field-row">
                                 <label>{{ field.label }} height</label>
-                                <input type="number" min="0" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
+                                <input type="number" min="0" name="{{ height_key }}" placeholder="1"
+                                    value="{{ config.get(height_key, default_config[height_key]) }}" />
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -75,11 +233,13 @@
                             {% set height_key = field.key ~ "_height" %}
                             <div class="field-row">
                                 <label>{{ field.label }} width</label>
-                                <input type="number" min="0" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
+                                <input type="number" min="0" name="{{ width_key }}" placeholder="1"
+                                    value="{{ config.get(width_key, default_config[width_key]) }}" />
                             </div>
                             <div class="field-row">
                                 <label>{{ field.label }} height</label>
-                                <input type="number" min="0" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
+                                <input type="number" min="0" name="{{ height_key }}" placeholder="1"
+                                    value="{{ config.get(height_key, default_config[height_key]) }}" />
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -95,11 +255,13 @@
                             {% set height_key = field.key ~ "_height" %}
                             <div class="field-row">
                                 <label>{{ field.label }} width</label>
-                                <input type="number" min="0" name="{{ width_key }}" placeholder="1" value="{{ config.get(width_key, default_config[width_key]) }}" />
+                                <input type="number" min="0" name="{{ width_key }}" placeholder="1"
+                                    value="{{ config.get(width_key, default_config[width_key]) }}" />
                             </div>
                             <div class="field-row">
                                 <label>{{ field.label }} height</label>
-                                <input type="number" min="0" name="{{ height_key }}" placeholder="1" value="{{ config.get(height_key, default_config[height_key]) }}" />
+                                <input type="number" min="0" name="{{ height_key }}" placeholder="1"
+                                    value="{{ config.get(height_key, default_config[height_key]) }}" />
                             </div>
                             {% endif %}
                             {% endfor %}
@@ -117,7 +279,8 @@
                                 {% if "master" in field.key %}
                                 <div class="field-row">
                                     <label>Number of {{ field.count_label }}</label>
-                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
+                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1"
+                                        value="{{ config.get(field.count, default_config[field.count]) }}" />
                                 </div>
                                 {% endif %}
                                 {% endfor %}
@@ -131,7 +294,8 @@
                                 {% if "regular" in field.key %}
                                 <div class="field-row">
                                     <label>Number of {{ field.count_label }}</label>
-                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
+                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1"
+                                        value="{{ config.get(field.count, default_config[field.count]) }}" />
                                 </div>
                                 {% endif %}
                                 {% endfor %}
@@ -145,7 +309,8 @@
                                 {% if "master" not in field.key and "regular" not in field.key %}
                                 <div class="field-row">
                                     <label>Number of {{ field.count_label }}</label>
-                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1" value="{{ config.get(field.count, default_config[field.count]) }}" />
+                                    <input type="number" min="0" name="{{ field.count }}" placeholder="1"
+                                        value="{{ config.get(field.count, default_config[field.count]) }}" />
                                 </div>
                                 {% endif %}
                                 {% endfor %}
@@ -160,12 +325,13 @@
                 </div>
             </form>
             <div class="hint">The right side shows a snapshot of the Pygame window and a canvas preview.</div>
-            <iframe class="canvas-host" src="{{ url_for('canvas_view') }}" title="Canvas view"></iframe>
-       </div>
+            <!--<iframe class="canvas-host" src="{{ url_for('canvas_view') }}" title="Canvas view"></iframe>-->
+        </div>
 
         <div class="panel iframe-stack">
             <iframe class="pygame-host" src="{{ url_for('pygame_window_view') }}" title="Pygame window"></iframe>
-             </div>
+        </div>
     </div>
 </body>
+
 </html>

@@ -75,6 +75,11 @@
             cursor: pointer;
         }
 
+        .build-3d-btn {
+            background: #10b981;
+            color: #fff;
+        }
+
         .pause-btn {
             background: #2563eb;
             color: #fff;
@@ -97,21 +102,34 @@
             <form method="post" action="{{ url_for('second_screen_reset') }}">
                 <button class="reset-btn" type="submit">Reset</button>
             </form>
-            <form method="post" action="{{ url_for('second_screen_build_3d') }}">
-                <button class="pause-btn" type="submit">Build 3D</button>
-            </form>
-            <form method="post" action="{{ url_for('second_screen_view_3d') }}">
-                <button class="reset-btn" type="submit">View 3D</button>
+            <form id="build-3d-form" method="post" action="{{ url_for('second_screen_build_3d') }}">
+                <button class="build-3d-btn" type="submit">Build 3D</button>
             </form>
         </div>
         <span class="view-3d-label">3D Building View</span>
         <img id="img-3d" class="shot-3d" alt="3D Building View"
             src="/view-3d-image?t={{ timestamp }}" />
         <script>
-            // Refresh the 3D view image every 4 seconds so it picks up newly generated images
+            const buildForm = document.getElementById('build-3d-form');
+            const img3d = document.getElementById('img-3d');
+
+            if (buildForm && img3d) {
+                buildForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const form = event.currentTarget;
+                    const formData = new FormData(form);
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData
+                    }).then(function() {
+                        img3d.src = '/view-3d-image?t=' + Date.now();
+                    });
+                });
+            }
+
             setInterval(function() {
-                var img = document.getElementById('img-3d');
-                if (img) { img.src = '/view-3d-image?t=' + Date.now(); }
+                if (img3d) { img3d.src = '/view-3d-image?t=' + Date.now(); }
             }, 4000);
         </script>
     </div>

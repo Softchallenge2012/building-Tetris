@@ -3,7 +3,7 @@ import io
 import os
 from PIL import Image
 from langchain_core.messages import HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from google import genai
 
 def encode_image(image_path: str) -> str:
@@ -11,12 +11,41 @@ def encode_image(image_path: str) -> str:
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode("utf-8")
 
+
+def trim_white_margins(image: Image.Image, threshold: int = 245, keep_canvas_size: bool = False) -> Image.Image:
+    """Remove white/empty margins around the subject and keep only the actual building block."""
+    rgba = image.convert("RGBA")
+    width, height = rgba.size
+    bbox = None
+
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = rgba.getpixel((x, y))
+            if a > 0 and not (r > threshold and g > threshold and b > threshold):
+                if bbox is None:
+                    bbox = [x, y, x, y]
+                else:
+                    bbox[0] = min(bbox[0], x)
+                    bbox[1] = min(bbox[1], y)
+                    bbox[2] = max(bbox[2], x)
+                    bbox[3] = max(bbox[3], y)
+
+    if bbox is None:
+        return image
+
+    left, top, right, bottom = bbox
+    cropped = image.crop((left, top, right + 1, bottom + 1))
+    if keep_canvas_size:
+        return cropped.resize((width, height), Image.LANCZOS)
+    return cropped
+
+
 def generate_polished_images():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     outputs_dir = os.path.abspath(os.path.join(base_dir, "..", "outputs"))
 
-    # 1. Initialize Gemini models
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.2)
+    # 1. Initialize the text model and image generation client
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
     client = genai.Client()
 
     pattern_ref = os.path.join(outputs_dir, "patterns.jpeg")
@@ -34,17 +63,21 @@ def generate_polished_images():
         
         pattern_b64 = encode_image(pattern_ref)
         elevation_b64 = encode_image(view["file"])
-        
+
+        # Read the elevation diagram and remove any white border so only the building block remains
+        with Image.open(view["file"]) as elev_im:
+            elev_im = trim_white_margins(elev_im, keep_canvas_size=False)
+            elev_w, elev_h = elev_im.size
+        aspect_ratio = f"{elev_w}:{elev_h}"
+
         content_payload = [
             {
                 "type": "text",
                 "text": (
-                    f"Given the attached {view['name']} building elevation diagram and the arch pattern reference image, "
-                    f"generate a detailed image generation prompt for a futuristic and modern 17-story building elevation for the {view['name']} face. "
-                    "The instruction requires changing the building exterior colors to metallic silver/futuristic finish and "
-                    "linking the central windows into the arched rainbow pattern shown in the reference image. "
-                    "CRITICAL REQUIREMENT 1: The prompt MUST mandate that the output image features ONLY the building structure itself against a pure, seamless solid white background, with NO sky, NO clouds, NO ground/landscape, NO trees, and NO surrounding environment or background elements. "
-                    "CRITICAL REQUIREMENT 2: The output needs to have 17 stories for this view!"
+                    f"Given the attached {view['name']} building side view, "
+                    "the small square elements are the windows. Only change the color of these window squares to create an arch pattern that follows the reference image. "
+                    "Keep every other part of the building, façade, structure, and background exactly the same; do not alter the building shape, framing, walls, lines, or any non-window elements. "
+                    "Preserve the original design and only recolor the windows into the rainbow/arch pattern."
                 )
             },
             {
@@ -63,13 +96,20 @@ def generate_polished_images():
         generated_prompt = str(response.content)
         print(f"Synthesized Prompt for {view['name']} View:\n{generated_prompt}\n")
 
+        # Append hard size constraint to the generated prompt
+        size_suffix = (
+            f" OUTPUT SIZE: The image must be exactly {elev_w} pixels wide by {elev_h} pixels tall "
+            f"(aspect ratio {aspect_ratio}), matching the elevation diagram dimensions precisely."
+        )
+        generated_prompt += size_suffix
+
         # Generate image for this view
         img_response = client.models.generate_content(
             model="gemini-2.5-flash-image",
             contents=generated_prompt
         )
 
-        # Save output images
+        # Save output images, resized to exactly match the elevation diagram
         file_path = os.path.join(outputs_dir, view["out_name"])
         file_path_num = os.path.join(outputs_dir, f"facade_elevation_{idx + 1}.png")
         
@@ -78,9 +118,12 @@ def generate_polished_images():
                 img_data = part.inline_data.data
                 img_bytes = base64.b64decode(img_data) if isinstance(img_data, str) else img_data
                 image = Image.open(io.BytesIO(img_bytes))
+                # Crop away any white border and keep only the building block itself
+                image = trim_white_margins(image, keep_canvas_size=False)
+                image = image.resize((elev_w, elev_h), Image.LANCZOS)
                 image.save(file_path)
                 image.save(file_path_num)
-                print(f"Saved {view['name']} view image to: {file_path} and {file_path_num}\n")
+                print(f"Saved {view['name']} view image to: {file_path} and {file_path_num} (size: {elev_w}×{elev_h})\n")
 
 if __name__ == '__main__':
     generate_polished_images()

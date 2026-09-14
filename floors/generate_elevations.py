@@ -2,6 +2,32 @@ import os
 from collections import Counter
 from PIL import Image, ImageDraw, ImageFont
 
+
+def trim_white_margins(image: Image.Image, threshold: int = 245) -> Image.Image:
+    """Remove white border space and keep only the actual building block."""
+    rgba = image.convert("RGBA")
+    width, height = rgba.size
+    bbox = None
+
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = rgba.getpixel((x, y))
+            if a > 0 and not (r > threshold and g > threshold and b > threshold):
+                if bbox is None:
+                    bbox = [x, y, x, y]
+                else:
+                    bbox[0] = min(bbox[0], x)
+                    bbox[1] = min(bbox[1], y)
+                    bbox[2] = max(bbox[2], x)
+                    bbox[3] = max(bbox[3], y)
+
+    if bbox is None:
+        return image
+
+    left, top, right, bottom = bbox
+    return image.crop((left, top, right + 1, bottom + 1))
+
+
 def generate_elevations():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     outputs_dir = os.path.abspath(os.path.join(base_dir, "..", "outputs"))
@@ -155,12 +181,13 @@ def generate_elevations():
         wall_top = MARGIN + TITLE_H
         baseline = wall_top + WALL_H
         wall_crop = img.crop((0, wall_top, IMG_W, baseline))
-        
+        wall_crop = trim_white_margins(wall_crop)
+
         stacked_h = WALL_H * 17
-        stacked_img = Image.new('RGB', (IMG_W, stacked_h), (255, 255, 255))
+        stacked_img = Image.new('RGB', (wall_crop.width, stacked_h), (255, 255, 255))
         for f in range(17):
             stacked_img.paste(wall_crop, (0, f * WALL_H))
-            
+
         stacked_img.save(os.path.join(outputs_dir, file_map[title]))
     print('Grid (row by row):')
     for r in grid:

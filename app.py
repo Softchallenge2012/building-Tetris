@@ -445,7 +445,31 @@ def generate_3d_building_view():
         if not os.path.exists(p):
             im = Image.new('RGB', (150, 150), (255, 255, 255))
         else:
-            im = Image.open(p).convert('RGB').resize((150, 150))
+            im = Image.open(p).convert('RGB')
+            arr = np.array(im)
+
+            bg = (arr[:, :, 0] >= 240) & (arr[:, :, 1] >= 240) & (arr[:, :, 2] >= 240)
+            mask = ~bg
+
+            from scipy import ndimage
+            struct = np.ones((3, 3), dtype=bool)
+            cleaned = ndimage.binary_opening(mask, structure=struct, iterations=2)
+
+            labeled, n = ndimage.label(cleaned)
+            if n > 0:
+                sizes = ndimage.sum(cleaned, labeled, range(1, n + 1))
+                main_label = int(np.argmax(sizes)) + 1
+                building = labeled == main_label
+                rows = np.any(building, axis=1)
+                cols = np.any(building, axis=0)
+                if rows.any() and cols.any():
+                    rmin, rmax = np.where(rows)[0][[0, -1]]
+                    cmin, cmax = np.where(cols)[0][[0, -1]]
+                    im = im.crop((cmin, rmin, cmax + 1, rmax + 1))
+
+            # trimmed_path = os.path.join(outputs_dir, "trimmed_" + os.path.basename(p))
+            # im.save(trimmed_path)
+            im = im.resize((150, 150))
         return np.array(im) / 255.0
 
     south_img = load_img("facade_elevation_south.png", "elevation_bottom_south.png")
@@ -501,6 +525,11 @@ def second_screen_build_3d():
     # 2. Polish 4 elevation views using floors/image_generation.py
     generate_polished_images()
 
+    # return redirect(url_for("pygame_window_view"))
+
+    # 3. Generate 3D building view
+    generate_3d_building_view()
+
     return redirect(url_for("pygame_window_view"))
 
 
@@ -514,7 +543,7 @@ def second_screen_view_3d():
 def view_3d_image():
     out_3d = os.path.join(os.path.dirname(__file__), "outputs", "building_3d_view.png")
     if not os.path.exists(out_3d):
-        generate_3d_building_view()
+        return "", 204
     response = send_file(out_3d, mimetype="image/png")
     response.cache_control.no_store = True
     response.cache_control.no_cache = True
@@ -529,7 +558,7 @@ def pygame_snapshot():
     _ensure_snapshot_exists()
     if os.path.exists(SNAPSHOT_PATH):
         shutil.copy2(SNAPSHOT_PATH, TOP_VIEW_PATH)
-        _generate_facade_views(TOP_VIEW_PATH)
+        # _generate_facade_views(TOP_VIEW_PATH)
     target_path = SNAPSHOT_PATH if os.path.exists(SNAPSHOT_PATH) else TOP_VIEW_PATH
     response = send_file(target_path, mimetype="image/png")
     response.cache_control.no_store = True
@@ -552,5 +581,5 @@ if __name__ == "__main__":
     _ensure_snapshot_exists()
     if os.path.exists(SNAPSHOT_PATH):
         shutil.copy2(SNAPSHOT_PATH, TOP_VIEW_PATH)
-        _generate_facade_views(TOP_VIEW_PATH)
+        # _generate_facade_views(TOP_VIEW_PATH)
     APP.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False)
